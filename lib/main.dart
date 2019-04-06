@@ -3,9 +3,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:w3c_event_source/event_source.dart';
 import 'dart:io' show Platform;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+var flutterLocalNotificationsPlugin;
 
-void main() => runApp(MyApp());
+void main() {
+  flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -57,7 +62,28 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    _notificationSettings();
     _sse();
+  }
+
+  void _notificationSettings(){
+    var settingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    var settingsIOS = IOSInitializationSettings();
+    var initializationSettings = InitializationSettings(settingsAndroid, settingsIOS);
+    flutterLocalNotificationsPlugin.initialize(initializationSettings, onSelectNotification: onSelectNotification);
+  }
+
+  Future onSelectNotification(String payload){
+    print('payload: $payload');
+  }
+
+  Future _showNotification(String title, String description) async {
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+        'your channel id', 'your channel name', 'your channel description',
+        importance: Importance.Max, priority: Priority.High);
+    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    await flutterLocalNotificationsPlugin.show(0, title, description, platformChannelSpecifics, payload: 'item x');
   }
 
   void _sse() {
@@ -81,6 +107,8 @@ class _MyHomePageState extends State<MyHomePage> {
           _title = data["title"];
           _description = data["description"];
         });
+
+        _showNotification(_title, _description);
       }
     });
 
