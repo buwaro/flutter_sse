@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:w3c_event_source/event_source.dart';
+import 'dart:io' show Platform;
+
 
 void main() => runApp(MyApp());
 
@@ -45,6 +50,45 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  String _title = '';
+  String _description = '';
+
+
+  @override
+  void initState() {
+    super.initState();
+    _sse();
+  }
+
+  void _sse() {
+    String url = "";
+    if (Platform.isIOS) {
+      url = 'http://localhost:3000/sse';
+    } else {
+      url = 'http://10.0.2.2:3000/sse';
+    }
+
+    final events = EventSource(Uri.parse(url));
+
+    final subscription = events.events.listen((MessageEvent message) {
+      print('${message.name}: ${message.data}');
+
+      if(message.data != '') {
+        var data = json.decode(message.data);
+        print('data' + data["title"]);
+
+        setState(() {
+          _title = data["title"];
+          _description = data["description"];
+        });
+      }
+    });
+
+    Timer(Duration(hours: 1), () {
+      // Canceling the subscription closes the connection.
+      subscription.cancel();
+    });
+  }
 
   void _incrementCounter() {
     setState(() {
@@ -91,6 +135,12 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Text(
+                'title: $_title'
+            ),
+            Text(
+                'description: $_description'
+            ),
             Text(
               'You have pushed the button this many times:',
             ),
